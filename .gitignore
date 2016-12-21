@@ -1,0 +1,4 @@
+asset/
+data/*
+!data/input.txt
+*.pyc
