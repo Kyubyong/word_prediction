@@ -1,4 +1,4 @@
-#/usr/bin/python2
+#!/usr/bin/python2
 # coding: utf-8
 '''
 Preprocessing.
@@ -12,7 +12,7 @@ class Hyperparams:
     '''Hyper parameters'''
     batch_size = 16
     embed_dim = 200
-    seqlen = 100 # We will predict next characters based on the previous 99 characters.
+    seqlen = 100 # We will predict next characters based on the previous 100 characters.
     
 def prepro():
     '''Embeds and vectorize words in corpus'''
@@ -21,30 +21,24 @@ def prepro():
     from nltk.corpus import reuters
     
     def clean_sent(sent):
-        sent = re.sub("[^ 0-9A-Za-z\-\.\?!\']", "_", sent) # "_" for unknown inputs
+        sent = sent.lower()
+        sent = re.sub("[^ 0-9a-z\-.?!']", "~", sent) # "~" for unknown inputs
+        sent = re.sub("([.?!])", r" \1", sent)
         return sent
     
     paras = []
-    maxlen = 0
     for para in reuters.paras(): # paragraph-wise
-        new = []
+        
+        sents = []
         for sent in para: # sentence-wise. FYI, 54716 sentences in total
-            sent_ = " ".join(sent)
-            sent_ = clean_sent(sent_)
-            new.append(sent_)
-        new = " ".join(new)
-        paras.append(new)
-        maxlen = max(maxlen, len(new))
+            _sent = " ".join(sent)
+            _sent = clean_sent(_sent)
+            sents.append(_sent)
+        _para = " ".join(sents)
+        if len(_para) < 1000:
+            paras.append(_para)
     
-    print "# Create Vocabulary"
-    vocab = ["<EMP>"] + list(set("".join(paras)))    
-     
-    print "# Create character maps"   
-    char2idx = {char:idx for idx, char in enumerate(vocab)}
-    idx2char = {idx:char for idx, char in enumerate(vocab)}
-    
-    print "vocabulary size =", len(char2idx) 
-    pickle.dump((char2idx, idx2char), open('data/charmaps.pkl', 'wb'))
+    char2idx, idx2char = load_charmaps()
      
     print "# Vectorize"
     xs = [] # vectorized sentences
@@ -54,20 +48,21 @@ def prepro():
             if char in char2idx:
                 x.append(char2idx[char])
             else:
-                x.append(char2idx["_"]) #"OOV"
-        xs.append( [0] * (maxlen - len(x)) + x ) # zero pre-padding
+                x.append(char2idx["~"]) #"OOV"
+        xs.append( [0] * (1000 - len(x)) + x ) # zero pre-padding
   
     print "# Convert to 2d-arrays"
     X = np.array(xs)
     
     print "X.shape =", X.shape
-  
     np.save('data/X', X)
              
 def load_charmaps():
-    '''Loads character dictionaries'''
-    char2idx, idx2char = pickle.load(open('data/charmaps.pkl', 'rb'))
-    return char2idx, idx2char
+    vocab = "@ abcdefghijklmnopqrstuvwxyz0123456789.-'~" # @:empty, ~: unknown
+    char2idx = {char:idx for idx, char in enumerate(vocab)}
+    idx2char = {idx:char for idx, char in enumerate(vocab)}  
+    
+    return char2idx, idx2char  
 
 def load_data():
     '''Loads vectorized input training data
@@ -76,5 +71,4 @@ def load_data():
 
 if __name__ == '__main__':
     prepro()
-    load_data()
     print "Done"        

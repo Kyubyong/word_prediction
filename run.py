@@ -24,7 +24,7 @@ def vectorize_input():
             if char in char2idx: 
                 x.append(char2idx[char])
             else:
-                x.append(char2idx["_"]) #"OOV"
+                x.append(char2idx["~"]) #"OOV"
         assert len(x) == len(para)
         xs.append(x)
     
@@ -41,17 +41,17 @@ def main():
         # restore parameters
         saver = tf.train.Saver()
         saver.restore(sess, tf.train.latest_checkpoint('asset/train/ckpt'))
+        mname = open('asset/train/ckpt/checkpoint', 'r').read().split('"')[1] # model name
                      
         paras, xs = vectorize_input() 
         char2idx, idx2char = load_charmaps()
-        space_idx = char2idx[' ']
-        with codecs.open('data/output_model-006-333257.txt', 'w', 'utf-8') as fout:
-            fout.write("{}\t{}\t{}\t{}\n".format("Characters", "Target Words", "Predictions", "Cumulative Keystroke Numbers", "Hits"))
+        with codecs.open('data/output_{}.txt'.format(mname), 'w', 'utf-8') as fout:
+            fout.write("{}\t{}\t{}\t{}\n".format("Characters", "Target Words", "Predictions", "# Cumulative Keystrokes", "Hits"))
             hits = 0
             stop_counting = False
             for para, x in zip(paras, xs):
-                x = [0] * (Hyperparams.seqlen - 1) + x + [0]
-                para = "_" * (Hyperparams.seqlen - 2) + " " + para
+                x = [0] * (Hyperparams.seqlen - 1) + [1] + x + [0]
+                para = "_" * (Hyperparams.seqlen - 1) + " " + para
                 
                 chars, words = [], [] # words: the word that the char composes
                 for word in para.split():
@@ -64,9 +64,17 @@ def main():
                 prefix = "" 
                 for i, pair in enumerate(zip(chars, words)):
                     char, word = pair
-                    if i > Hyperparams.seqlen-1:
-                        ctx = x[i - Hyperparams.seqlen + 1:i] # indices of preceding 99 characters
-
+                    if i > Hyperparams.seqlen:
+                        ctx = np.array(x[i - Hyperparams.seqlen:i], np.int32) # indices of preceding 100 characters
+                        
+                        def lstrip(ctx):
+                            '''Replace elements before the first space with zeros.'''
+                            first_ind_of_1 = np.where(ctx == 1)[0][0] # 1 means space.
+                            ctx = np.concatenate((np.zeros((first_ind_of_1)), ctx[first_ind_of_1:]))
+                            return ctx
+                        
+                        ctx = lstrip(ctx)
+                        
                         tgt = x[i] # index of target character
                         
                         if char == " ": 
@@ -81,15 +89,16 @@ def main():
                         
                         j = 1
                         while j < 10:
-                            logits = sess.run(g.logits, {g.x: np.expand_dims(_ctx, 0)}) #(1, 70)
+                            logits = sess.run(g.logits, {g.x: np.expand_dims(_ctx, 0)}) #(1, 100)
                             pred = np.argmax(logits) #()
                               
-                            if pred == space_idx:
+                            if pred == 1: # space
                                 break
                             else:
                                 preds += idx2char[pred]
                             _ctx = _ctx[1:]
-                            _ctx.append(pred.tolist())
+                            _ctx = np.append(_ctx, pred)
+                            _ctx = lstrip(_ctx)
                             j += 1
                             
                         if not stop_counting:

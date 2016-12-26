@@ -4,7 +4,7 @@ Tokenizes English sentences using neural networks
 Nov., 2016. Kyubyong.
 '''
 
-from __prepro import Hyperparams, load_data, load_charmaps
+from prepro import Hyperparams, load_data, load_charmaps
 import sugartensor as tf
 
 def get_batch_data():
@@ -17,20 +17,23 @@ def get_batch_data():
       X_batch and Y_batch have of the shape [batch_size, maxlen].
     '''
     # Load data
-    X = load_data() # (11887, 11648)
+    X = load_data() # (9207, 1000)
 
     # Create Queues
-    x_q, = tf.train.slice_input_producer([tf.convert_to_tensor(X, tf.int32)]) # (11747,)
+    x_q, = tf.train.slice_input_producer([tf.convert_to_tensor(X, tf.int32)]) # (1000,)
     
     # Lstrip zeros
     zeros = tf.equal(x_q, tf.zeros_like(x_q)).sg_int().sg_sum()
-    x_q = x_q[zeros:]
+    x_q = x_q[zeros:] 
     
-    # Append 99 zeros.
-    x_q = tf.concat(0, [tf.zeros([Hyperparams.seqlen-1,], tf.int32), x_q])
+    # Initial Padding
+    x_q = tf.concat(0, [tf.zeros([Hyperparams.seqlen-1,], tf.int32), # 99 zero-padding
+                        tf.ones([1,], tf.int32),  # 1: space
+                        x_q]) # [0, 0, 0, ..., 1, ...] 99 zero-paddings and 1 space and real numbers
     
     # Random crop
-    x_q = tf.random_crop(x_q, [Hyperparams.seqlen]) # (100,)
+    x_q = crop(x_q, Hyperparams.seqlen+1) # (101,) Why? the last one will be y.
+    x_q.set_shape(Hyperparams.seqlen+1)
 #     
     # create batch queues
     x = tf.train.shuffle_batch([x_q],
@@ -42,6 +45,41 @@ def get_batch_data():
     
     return x
 
+def crop(x, seqlen):
+    '''Returns random cropped tensor `y` of `x`.
+    To avoid `y` starts with broken word piece, we replace the elements before the 
+      the first appearing 1 (space) with zeros.
+    
+    For example,
+    
+    ```
+    import tensorflow as tf
+    x = tf.constant([3, 5, 2, 1, 5, 6, 7, 1, 3])
+    seqlen = 5
+    z = crop(x, seqlen)
+    with tf.Session() as sess:
+        print z.eval()
+        => [0 0 1 5 6]
+    ```
+       
+    Args:
+      x: A 1-D `Tensor`.
+      seqlen: A 1-D `Tensor`. Seqlen of the returned tensor.
+    
+    Returns: 
+      A 1-D `Tensor`. Has the size of seqlen.
+    
+    '''
+    x = tf.random_crop(x, [seqlen]) # (100,)
+    first_ind_of_1 = tf.where(tf.equal(x, 1))[0] # 1 means space.
+    
+    zero_padding = tf.zeros(tf.to_int32(first_ind_of_1), tf.int32)
+    x_back = tf.slice(x, first_ind_of_1, [-1]) # -1 means "all the remaining part"
+    out = tf.concat(0, (zero_padding, x_back))
+    
+    return out
+    
+    
 # residual block
 @tf.sg_sugar_func
 def sg_res_block(tensor, opt):
@@ -75,11 +113,10 @@ class ModelGraph():
           mode: A string. Either "train" , "val", or "test"
         '''
         if is_train:
-            self.x = get_batch_data() # (16, 11747)
-            self.x, self.y = self.x[:, :Hyperparams.seqlen-1], self.x[:, Hyperparams.seqlen-1] # (16, 99) (16,)
+            self.x = get_batch_data() # (16, 101)
+            self.x, self.y = self.x[:, :Hyperparams.seqlen], self.x[:, Hyperparams.seqlen] #(16, 100) (16,)
         else:
-            self.x = tf.placeholder(tf.int32, [None, Hyperparams.seqlen-1])
-        
+            self.x = tf.placeholder(tf.int32, [None, Hyperparams.seqlen])
         
         self.char2idx, self.idx2char = load_charmaps()
         
@@ -106,14 +143,12 @@ class ModelGraph():
         if is_train:
             # Cross entropy loss
             self.ce = self.logits.sg_ce(target=self.y, mask=False, one_hot=False)
-#             self.nonzeros = tf.not_equal(self.y, tf.zeros_like(self.y)).sg_float()
-#             self.reduced_loss = (self.ce * self.nonzeros).sg_sum() / ( self.nonzeros.sg_sum() + tf.sg_eps )
             
 def train():
     g = ModelGraph()
     print "Graph loaded!"
 
-    tf.sg_train(lr=0.0001, lr_reset=True, log_interval=10, loss=g.ce, eval_metric=[], max_ep=100, 
+    tf.sg_train(lr_reset=True, log_interval=10, loss=g.ce, eval_metric=[], max_ep=100, 
                 save_dir='asset/train', early_stop=False, max_keep=10)
      
 if __name__ == '__main__':
