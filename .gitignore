@@ -1,5 +1,6 @@
+etc/
 asset/
 data/*
-!data/input.txt
+!data/word_vocab.pkl
 *.pyc
 _*
