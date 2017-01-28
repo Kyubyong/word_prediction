@@ -22,7 +22,7 @@ In this project, we examine how well neural networks can predict the current or 
 
 
 ## Data
-* For training and test, we use English wikinews dumps for the last 6 months.
+* For training and test, we build an English news corpus from wikinews dumps for the last 6 months.
 
 ## Model Architecture / Hyper-parameters
 
@@ -38,6 +38,12 @@ In this project, we examine how well neural networks can predict the current or 
 * STEP 5. Run `train.py`.
 * STEP 6. Run `eval.py` to get the results for the test sentences.
 * STEP 7. We manually tested for the same test sentences with iPhone 7 keyboard.
+
+### if you want to use the pretrained model,
+
+* Download [the output files](https://drive.google.com/open?id=0B0ZXk88koS2KemFWdFNoSnBfNDg) of STEP 3 and STEP 4, then extract them to `data/` folder.
+* Download [the pre-trained model files](https://drive.google.com/open?id=0B0ZXk88koS2KR2E3eTlIUHpzM2s), then extract them to `asset/train` folder.
+* Run `eval.py`.
 
 ## Results
 
@@ -56,6 +62,4 @@ The training took 4-5 days on my single GPU (gtx 1060). As can be seen below, ou
   * As always, bigger data is better.
 * Can anybody implement a traditional n-gram model for comparison?
 
-## Note for reproducibility
-* Download [the pre-trained model file](https://drive.google.com/open?id=0B0ZXk88koS2KR2E3eTlIUHpzM2s
-) and extract it to `asset/train` folder.
+
