@@ -53,10 +53,10 @@ def main():
             chars, targets = [], [] # targets: the word that the char composes
             for word in "".join(para).split():
                 chars.append(" ")
-                targets.append(word.strip("_"))
+                targets.append(word)
                 for char in word:
                     chars.append(char)
-                    targets.append(word.strip("_"))
+                    targets.append(word)
             
             prefix = "" 
             preds = set()
@@ -89,7 +89,7 @@ def main():
                             stop_counting = True
                         preds.add(pred)
                     
-                    results.append( "{},{},{},{},{},{},{}".format(num_char, num_para, char, target, oov, predword, rk) )
+                    results.append(u"{},{},{},{},{},{},{}".format(num_char, num_para, char, target, oov, predword, rk) )
                     num_char += 1
             
             num_para += 1

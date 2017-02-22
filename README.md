@@ -42,16 +42,20 @@ In this project, we examine how well neural networks can predict the current or 
 ### if you want to use the pretrained model,
 
 * Download [the output files](https://drive.google.com/open?id=0B0ZXk88koS2KemFWdFNoSnBfNDg) of STEP 3 and STEP 4, then extract them to `data/` folder.
-* Download [the pre-trained model files](https://drive.google.com/open?id=0B0ZXk88koS2KR2E3eTlIUHpzM2s), then extract them to `asset/train` folder.
+* Download [the pre-trained model files](https://drive.google.com/open?id=0B0ZXk88koS2KNHBuM09kSXFJNzA), then extract them to `asset/train` folder.
 * Run `eval.py`.
+
+## Updates
+* In the fourth week of Feb., 2017, we refactored the source file for TensorFlow 1.0.
+* In addition, we changed the last global-average pooling to inverse-weighted pooling. As a result, the #KSR improved from 0.39 to 0.42. Check this.
 
 ## Results
 
-The training took 4-5 days on my single GPU (gtx 1060). As can be seen below, our model is lower than iPhone in KSR by 8 percent points. Details are available in `results.csv`. 
+The training took ~~4-5~~ 2-3 days on my single GPU (gtx 1060). As can be seen below, our model is lower than iPhone in KSR by ~~8~~ 5 percent points. Details are available in `results.csv`. 
 
 | #FK | #RK: Ours | #RK: iPhone 7 |
 |--- |--- |--- |--- |--- |
-| 40,787 | 24,727 (=0.39 ksr) | 21,535 (=0.47 ksr)|
+| 40,787 | ~~24,727 (=0.39 ksr)~~ <br>->23,753 (=0.42 ksr) | 21,535 (=0.47 ksr)|
 
 ## Conclusions
 * Unfortunately, our simple model failed to show better performance than the iPhone predictive engine.

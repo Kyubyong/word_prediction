@@ -17,10 +17,8 @@ def q_process(t1, t2):
     t2 = t2[zeros:]
 
     # zero-PrePadding
-    t1 = tf.concat(0, [tf.zeros([Hyperparams.seqlen-1], tf.int32), # 49 zero-prepadding
-                        t1]) 
-    t2 = tf.concat(0, [tf.zeros([Hyperparams.seqlen-1], tf.int32), # 49 zero-prepadding
-                        t2]) 
+    t1 = tf.concat([tf.zeros([Hyperparams.seqlen-1], tf.int32), t1], 0)# 49 zero-prepadding
+    t2 = tf.concat([tf.zeros([Hyperparams.seqlen-1], tf.int32), t2], 0)# 49 zero-prepadding
     # radom crop    
     stacked = tf.stack((t1, t2))
     cropped = tf.random_crop(stacked, [2, Hyperparams.seqlen])
@@ -77,8 +75,20 @@ class ModelGraph():
                 dim = self.enc.get_shape().as_list()[-1]
                 self.enc += self.enc.sg_conv1d(dim=dim) # (64, 50, 300) float32
         
-        self.enc = self.enc.sg_conv1d(size=1, dim=len(self.word2idx), act='linear', bn=False) # (64, 50, 20970) float32
-        self.logits = self.enc.sg_mean(dims=[1], keep_dims=False) # (64, 20970) float32
+        self.enc = self.enc.sg_conv1d(size=1, dim=len(self.word2idx), act='linear', bn=False) # (64, 50, 21293) float32
+#         self.logits = self.enc.sg_mean(dims=[1], keep_dims=False) # (64, 21293) float32
+        
+        # Weighted Sum. Updated on Feb. 15, 2017.
+        def make_weights(size):
+            weights = tf.range(1, size+1, dtype=tf.float32)
+            weights *= 1. / ((1 + size) * size // 2)
+            weights = tf.expand_dims(weights, 0)
+            weights = tf.expand_dims(weights, -1)
+            return weights
+        
+        self.weights = make_weights(Hyperparams.seqlen) # (1, 50, 1)
+        self.enc *= self.weights # Broadcasting
+        self.logits = self.enc.sg_sum(axis=[1], keep_dims=False) # (64, 21293)
 
         if mode == "train":
             self.ce = self.logits.sg_ce(target=self.y, mask=False, one_hot=False)
@@ -90,7 +100,7 @@ def train():
     g = ModelGraph()
     print("Graph loaded!")
 
-    tf.sg_train(loss=g.reduced_loss, eval_metric=[], max_ep=2000, 
+    tf.sg_train(optim="Adam", lr=0.00001, lr_reset=True, loss=g.reduced_loss, eval_metric=[], max_ep=20000, 
                 save_dir='asset/train', early_stop=False, ep_size=g.num_batch)
      
 if __name__ == '__main__':

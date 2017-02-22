@@ -1,6 +1,6 @@
 etc/
 asset/
 data/*
-!data/word_vocab.pkl
 *.pyc
 _*
+*~*
