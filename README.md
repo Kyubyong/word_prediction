@@ -47,7 +47,7 @@ In this project, we examine how well neural networks can predict the current or 
 
 ## Updates
 * In the fourth week of Feb., 2017, we refactored the source file for TensorFlow 1.0.
-* In addition, we changed the last global-average pooling to inverse-weighted pooling. As a result, the #KSR improved from 0.39 to 0.42. Check this.
+* In addition, we changed the last global-average pooling to inverse-weighted pooling. As a result, the #KSR improved from 0.39 to 0.42. Check [this](https://github.com/Kyubyong/word_prediction/blob/master/train.py#L81).
 
 ## Results
 
@@ -62,7 +62,6 @@ The training took ~~4-5~~ 2-3 days on my single GPU (gtx 1060). As can be seen b
 * Keep in mind that in practice predictive engines make use of other information such as user history.
 * There is still much room for improvement. Here are some ideas.
   * You can refine the model architecture or hyperparameters.
-  * We didn't apply pooling. It may affect the performance.
   * As always, bigger data is better.
 * Can anybody implement a traditional n-gram model for comparison?
 
