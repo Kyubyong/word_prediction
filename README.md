@@ -65,4 +65,8 @@ The training took ~~4-5~~ 2-3 days on my single GPU (gtx 1060). As can be seen b
   * As always, bigger data is better.
 * Can anybody implement a traditional n-gram model for comparison?
 
+## Cited By
+* Zhe Zeng & Matthias Roetting, A Text Entry Interface using Smooth Pursuit Movements and Language Model, Proceeding
+ETRA '18 Proceedings of the 2018 ACM Symposium on Eye Tracking Research & Applications, 2018
+
 
